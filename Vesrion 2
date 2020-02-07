@@ -1,0 +1,2014 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
+using System.Configuration;
+using System.Data.SqlClient;
+using System.Data;
+using System.Net.Mail;
+using System.IO;
+using System.Xml;
+using System.Xml.Xsl;
+using System.Xml.XPath;
+using System.Text;
+using System.Web.UI;
+using System.Web.UI.WebControls;
+using System.Web.Services;
+using System.Net;
+using System.Net.Sockets;
+using System.Collections;
+using System.Web.Security;
+
+using System.Web.UI.HtmlControls;
+using System.Web.UI.WebControls.WebParts;
+using System.Xml.Linq;
+using System.Drawing;
+using System.Threading;
+using System.Text.RegularExpressions;
+using Amazon.Util.Internal.PlatformServices;
+using Amazon.SimpleNotificationService;
+using Amazon.SimpleNotificationService.Model;
+using System.Threading.Tasks;
+using Nest;
+
+/// <summary>
+/// Summary description for scheduled_email
+/// </summary>
+public class scheduled_email
+{
+	public scheduled_email()
+	{
+		//
+		// TODO: Add constructor logic here
+		//
+	}
+
+
+
+    public static void Insert_lead(string fname, string lname, string email, string contact_no, string year, string make,
+       string model, string vin, string milege, string source, string from_url, string referal, string source_visite, string ip, string lead_type,
+        string location, string zip, string city, string address)
+    {
+
+        
+        try
+        {
+            HttpContext.Current.Session["thank_you"] = "allow";
+            if (HttpContext.Current.Session["ip_new"] != null)
+            {
+                ip = HttpContext.Current.Session["ip_new"].ToString();
+            }
+            if (HttpContext.Current.Session["url"] != null)
+            {
+                from_url = HttpContext.Current.Session["url"].ToString();
+            }
+            if (HttpContext.Current.Session["referal"] != null)
+            {
+                referal = HttpContext.Current.Session["referal"].ToString();
+            }
+
+
+          
+            string Drp_year = year;
+            string Drp_make = make;
+            string Drp_model = model;
+            if (Drp_year.Trim() == "Select Year" || Drp_year == "0" || Drp_year == "--SELECT YEAR--")
+            {
+                Drp_year = " ";
+            }
+            if (Drp_make.Trim() == "Select Make" || Drp_make == "0" || Drp_year == "--SELECT MAKE--")
+            {
+                Drp_make = "";
+            }
+            if (Drp_model.Trim() == "Select Model" || Drp_model == "0" || Drp_year == "--SELECT MODEL--")
+            {
+                Drp_model = "";
+            }
+
+
+            //-------------------------------- for book now model ----------------------------//
+            HttpContext.Current.Session["Name"] = fname.ToString() + " " + lname.ToString();
+            HttpContext.Current.Session["Phone"] = contact_no.ToString();
+            HttpContext.Current.Session["Email"] = email.ToString();
+            HttpContext.Current.Session["Location"] = location.ToString();
+            HttpContext.Current.Session["Zip"] = zip.ToString();
+            HttpContext.Current.Session["Vin"] = vin.ToString();
+            HttpContext.Current.Session["Milage"] = milege.ToString();
+
+            HttpContext.Current.Session["Year"] = Drp_year.ToString();
+            HttpContext.Current.Session["Make"] = Drp_make.ToString();
+            HttpContext.Current.Session["Model"] = Drp_model.ToString();
+
+            //--------------------------------------------------------------------------------//
+
+
+
+            string valid = "";
+            string inputDetails = "";
+            try
+            {
+
+                inputDetails = fname + "~" + lname + "~" + email + "~" +
+                 contact_no + "~" + year + "~" + make + "~" + model + "~" + vin + "~" + milege + "~" + source + "~" + "~" + ip + "~" + from_url + "~" + referal
+                 + "~" + "" + "~" + location + "~" + address + "~" + city + "~" + zip;
+
+                LogDetails.LogError(from_url, "Get_Start_insert_lead", inputDetails);
+
+            }
+            catch(Exception msg)
+
+            {
+                LogDetails.LogError(from_url, "Get_Start_insert_lead_log_error", msg.ToString());
+
+            }
+
+
+
+            valid = inputDetails;
+
+
+            string ConfigString = ConfigurationManager.ConnectionStrings["autobuyConnectionString"].ConnectionString;
+            SqlConnection myconnect = new SqlConnection(ConfigString);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataSet ds = new DataSet();
+            SqlCommand cmd = new SqlCommand();
+
+            cmd.Connection = myconnect;
+            cmd.CommandText = "Wepaythemax_Lead_insert2";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@fname", fname);
+            cmd.Parameters.AddWithValue("@lname", lname);
+            cmd.Parameters.AddWithValue("@customerdate", "");
+            cmd.Parameters.AddWithValue("@phone", contact_no);
+            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@year", Drp_year);
+            cmd.Parameters.AddWithValue("@make", Drp_make);
+            cmd.Parameters.AddWithValue("@model", Drp_model);
+            cmd.Parameters.AddWithValue("@vin", vin);
+            cmd.Parameters.AddWithValue("@mileage", milege);
+            cmd.Parameters.AddWithValue("@location", location);
+
+            cmd.Parameters.AddWithValue("@zip", zip);
+            cmd.Parameters.AddWithValue("@address", address);
+            cmd.Parameters.AddWithValue("@city", city);
+
+            cmd.Parameters.Add("@source", source);
+
+            SqlParameter leadid = new SqlParameter("@leadid", SqlDbType.VarChar, 100);
+            leadid.Direction = ParameterDirection.Output;
+            cmd.Parameters.Add(leadid);
+
+            string Email_sts = "Email";
+            cmd.Parameters.AddWithValue("@Email_status", Email_sts);
+            cmd.Parameters.AddWithValue("@customertime", "");
+
+            cmd.Parameters.AddWithValue("@pref_loc", location);
+            cmd.Parameters.AddWithValue("@source_visit", source_visite);
+
+            cmd.Parameters.AddWithValue("@ip", ip);
+            cmd.Parameters.AddWithValue("@from_page", from_url + "  Ref_Site: " + referal);
+            cmd.Parameters.AddWithValue("@lead_type", lead_type);
+
+
+            da.SelectCommand = cmd;
+            da.Fill(ds);
+
+            string sOutputstatus = string.Empty;
+            sOutputstatus = (string)cmd.Parameters["@leadid"].Value;
+
+            HttpContext.Current.Session["leadMain"] = sOutputstatus.ToString();
+            HttpContext.Current.Session["TypeNum"] = lead_type.ToString();
+            HttpContext.Current.Session["output"] = sOutputstatus;
+
+            //---call elastic search method
+            //  var ESTime = DateTime.Now.ToString("MM/dd/yyyy h:mm:ss tt"); //DateTime.Now.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff"); //DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss.fff");
+
+
+            //var ESDate = DateTime.Now.ToUniversalTime().AddHours(-5).ToString("MM-dd-yyyy");
+            // callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime);
+            //end of elastic search
+            DateTime ESTime = DateTime.Now.ToUniversalTime().AddHours(-5);
+            callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime, "1900-01-01 00:00:00", "");
+            email_function(fname ,lname, email, contact_no, Drp_year, Drp_make, Drp_model, "", "", location, vin, milege, source);
+
+          
+        }
+
+        catch (Exception ex)
+        {
+
+
+            LogDetails.LogError(from_url, "insert_error_db", ex.ToString());
+            
+        }
+
+
+    }
+
+    //---------------------------------------------------insert lead new for type 
+
+    public static void Insert_lead_new(string fname, string lname, string email, string contact_no, string year, string make,
+       string model, string vin, string milege, string source, string from_url, string referal, string source_visite, string ip, string lead_type,
+        string location, string zip, string city, string address, string type)
+    {
+
+
+        try
+        {
+            HttpContext.Current.Session["thank_you"] = "allow";
+            if (HttpContext.Current.Session["ip_new"] != null)
+            {
+                ip = HttpContext.Current.Session["ip_new"].ToString();
+            }
+            if (HttpContext.Current.Session["url"] != null)
+            {
+                from_url = HttpContext.Current.Session["url"].ToString();
+            }
+            if (HttpContext.Current.Session["referal"] != null)
+            {
+                referal = HttpContext.Current.Session["referal"].ToString();
+            }
+
+
+
+            string Drp_year = year;
+            string Drp_make = make;
+            string Drp_model = model;
+            if (Drp_year.Trim() == "Select Year" || Drp_year == "0" || Drp_year == "--SELECT YEAR--")
+            {
+                Drp_year = "";
+            }
+            if (Drp_make.Trim() == "Select Make" || Drp_make == "0" || Drp_year == "--SELECT MAKE--")
+            {
+                Drp_make = "";
+            }
+            if (Drp_model.Trim() == "Select Model" || Drp_model == "0" || Drp_year == "--SELECT MODEL--")
+            {
+                Drp_model = "";
+            }
+
+
+            //-------------------------------- for book now model ----------------------------//
+            HttpContext.Current.Session["Name"] = fname.ToString() + " " + lname.ToString();
+            HttpContext.Current.Session["Phone"] = contact_no.ToString();
+            HttpContext.Current.Session["Email"] = email.ToString();
+            HttpContext.Current.Session["Location"] = location.ToString();
+            HttpContext.Current.Session["Zip"] = zip.ToString();
+            HttpContext.Current.Session["Vin"] = vin.ToString();
+            HttpContext.Current.Session["Milage"] = milege.ToString();
+
+            HttpContext.Current.Session["Year"] = Drp_year.ToString();
+            HttpContext.Current.Session["Make"] = Drp_make.ToString();
+            HttpContext.Current.Session["Model"] = Drp_model.ToString();
+
+            //--------------------------------------------------------------------------------//
+
+
+
+            string valid = "";
+            string inputDetails = "";
+            try
+            {
+
+                inputDetails = fname + "~" + lname + "~" + email + "~" +
+                 contact_no + "~" + year + "~" + make + "~" + model + "~" + vin + "~" + milege + "~" + source + "~" + "~" + ip + "~" + from_url + "~" + referal
+                 + "~" + "" + "~" + location + "~" + address + "~" + city + "~" + zip;
+
+                LogDetails.LogError(from_url, "Get_Start_insert_lead", inputDetails);
+
+            }
+            catch (Exception msg)
+
+            {
+                LogDetails.LogError(from_url, "Get_Start_insert_lead_log_error", msg.ToString());
+
+            }
+
+
+
+            valid = inputDetails;
+
+
+            string ConfigString = ConfigurationManager.ConnectionStrings["autobuyConnectionString"].ConnectionString;
+            SqlConnection myconnect = new SqlConnection(ConfigString);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataSet ds = new DataSet();
+            SqlCommand cmd = new SqlCommand();
+
+            cmd.Connection = myconnect;
+            cmd.CommandText = "Wepaythemax_Lead_insert3";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@fname", fname);
+            cmd.Parameters.AddWithValue("@lname", lname);
+            cmd.Parameters.AddWithValue("@customerdate", "");
+            cmd.Parameters.AddWithValue("@phone", contact_no);
+            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@year", Drp_year);
+            cmd.Parameters.AddWithValue("@make", Drp_make);
+            cmd.Parameters.AddWithValue("@model", Drp_model);
+            cmd.Parameters.AddWithValue("@vin", vin);
+            cmd.Parameters.AddWithValue("@mileage", milege);
+            cmd.Parameters.AddWithValue("@location", location);
+
+            cmd.Parameters.AddWithValue("@zip", zip);
+            cmd.Parameters.AddWithValue("@address", address);
+            cmd.Parameters.AddWithValue("@city", city);
+
+            cmd.Parameters.Add("@source", source);
+
+
+            cmd.Parameters.AddWithValue("@type", type);
+
+
+            SqlParameter leadid = new SqlParameter("@leadid", SqlDbType.VarChar, 100);
+            leadid.Direction = ParameterDirection.Output;
+            cmd.Parameters.Add(leadid);
+
+            string Email_sts = "Email";
+            cmd.Parameters.AddWithValue("@Email_status", Email_sts);
+            cmd.Parameters.AddWithValue("@customertime", "");
+
+            cmd.Parameters.AddWithValue("@pref_loc", location);
+            cmd.Parameters.AddWithValue("@source_visit", source_visite);
+
+            cmd.Parameters.AddWithValue("@ip", ip);
+            cmd.Parameters.AddWithValue("@from_page", from_url + "  Ref_Site: " + referal);
+            cmd.Parameters.AddWithValue("@lead_type", lead_type);
+
+
+            da.SelectCommand = cmd;
+            da.Fill(ds);
+
+            string sOutputstatus = string.Empty;
+            sOutputstatus = (string)cmd.Parameters["@leadid"].Value;
+
+            HttpContext.Current.Session["leadMain"] = sOutputstatus.ToString();
+            HttpContext.Current.Session["TypeNum"] = type.ToString();
+            HttpContext.Current.Session["output"] = sOutputstatus;
+
+            //---call elastic search method
+            //  var ESTime = DateTime.Now.ToString("MM/dd/yyyy h:mm:ss tt"); //DateTime.Now.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff"); //DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss.fff");
+            DateTime ESTime = DateTime.Now.ToUniversalTime().AddHours(-5);
+            //var ESDate = DateTime.Now.ToUniversalTime().AddHours(-5).ToString("MM-dd-yyyy");
+            // callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime);
+            callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime, "1900-01-01 00:00:00", "");
+            //end of elastic search
+
+
+            email_function(fname, lname, email, contact_no, Drp_year, Drp_make, Drp_model, "", "", location, vin, milege, source);
+
+
+        }
+
+        catch (Exception ex)
+        {
+
+
+            LogDetails.LogError(from_url, "insert_error_db", ex.ToString());
+
+        }
+
+
+    }
+
+    //----------------------------------------------------insert lead new end
+
+
+    //-----------------Update Lead
+    public static void Update_lead(string fname, string lname, string email, string contact_no, string year, string make,
+       string model, string vin, string milege,string source, string from_url, string referal, string source_visite, string ip, string lead_type,
+        string location, string zip, string city, string address, string type,string leadId)
+    {
+
+       
+        try
+        {
+            HttpContext.Current.Session["thank_you"] = "allow";
+            if (HttpContext.Current.Session["ip_new"] != null)
+            {
+                ip = HttpContext.Current.Session["ip_new"].ToString();
+            }
+            if (HttpContext.Current.Session["url"] != null)
+            {
+                from_url = HttpContext.Current.Session["url"].ToString();
+            }
+            if (HttpContext.Current.Session["referal"] != null)
+            {
+                referal = HttpContext.Current.Session["referal"].ToString();
+            }
+
+
+
+            string Drp_year = year;
+            string Drp_make = make;
+            string Drp_model = model;
+            if (Drp_year.Trim() == "Select Year" || Drp_year == "0" || Drp_year == "--SELECT YEAR--")
+            {
+                Drp_year = " ";
+            }
+            if (Drp_make.Trim() == "Select Make" || Drp_make == "0" || Drp_year == "--SELECT MAKE--")
+            {
+                Drp_make = "";
+            }
+            if (Drp_model.Trim() == "Select Model" || Drp_model == "0" || Drp_year == "--SELECT MODEL--")
+            {
+                Drp_model = "";
+            }
+
+            //-------------------------------- for book now model ----------------------------//
+            HttpContext.Current.Session["Name"] = fname.ToString() + " " + lname.ToString();
+            HttpContext.Current.Session["Phone"] = contact_no.ToString();
+            HttpContext.Current.Session["Email"] = email.ToString();
+            HttpContext.Current.Session["Location"] = location.ToString();
+            HttpContext.Current.Session["Zip"] = zip.ToString();
+            HttpContext.Current.Session["Year"] = Drp_year.ToString();
+            HttpContext.Current.Session["Make"] = Drp_make.ToString();
+            HttpContext.Current.Session["Model"] = Drp_model.ToString();
+            HttpContext.Current.Session["Vin"] = vin.ToString();
+            HttpContext.Current.Session["Milage"] = milege.ToString();
+            //--------------------------------------------------------------------------------//
+            string valid = "";
+            string inputDetails = "";
+            try
+            {
+
+                inputDetails = fname + "~" + lname + "~" + email + "~" +
+                 contact_no + "~" + year + "~" + make + "~" + model + "~" + vin + "~" + milege + "~" + source + "~" + "~" + ip + "~" + from_url + "~" + referal
+                 + "~" + "" + "~" + location + "~" + address + "~" + city + "~" + zip;
+
+                LogDetails.LogError(from_url, "Get_Start_insert_lead", inputDetails);
+
+            }
+            catch (Exception msg)
+
+            {
+                LogDetails.LogError(from_url, "Get_Start_insert_lead_log_error", msg.ToString());
+
+            }
+
+
+
+            valid = inputDetails;
+           
+
+           string ConfigString = ConfigurationManager.ConnectionStrings["autobuyConnectionString"].ConnectionString;
+            SqlConnection myconnect = new SqlConnection(ConfigString);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataSet ds = new DataSet();
+            SqlCommand cmd = new SqlCommand();
+
+            cmd.Connection = myconnect;
+            cmd.CommandText = "Wepaythemax_LeadUpdate_insert";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@fname", fname);
+            cmd.Parameters.AddWithValue("@lname", lname);
+            cmd.Parameters.AddWithValue("@customerdate", "");
+            cmd.Parameters.AddWithValue("@phone", contact_no);
+            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@year", Drp_year);
+            cmd.Parameters.AddWithValue("@make", Drp_make);
+            cmd.Parameters.AddWithValue("@model", Drp_model);
+            cmd.Parameters.AddWithValue("@vin", vin);
+            cmd.Parameters.AddWithValue("@mileage", milege);
+            cmd.Parameters.AddWithValue("@location", location);
+            cmd.Parameters.AddWithValue("@zip", zip);
+            cmd.Parameters.AddWithValue("@address", address);
+            cmd.Parameters.AddWithValue("@city", city);
+
+            cmd.Parameters.AddWithValue("@source", source);
+
+
+            cmd.Parameters.AddWithValue("@type", type);
+            cmd.Parameters.AddWithValue("@leadidmain", leadId);
+
+            HttpContext.Current.Session["leadMain"] = leadId.ToString();
+
+            SqlParameter leadid = new SqlParameter("@leadid", SqlDbType.VarChar, 100);
+            leadid.Direction = ParameterDirection.Output;
+            cmd.Parameters.Add(leadid);
+
+            string Email_sts = "Email";
+            cmd.Parameters.AddWithValue("@Email_status", Email_sts);
+            cmd.Parameters.AddWithValue("@customertime", "");
+
+           // cmd.Parameters.AddWithValue("@pref_loc", location);
+            cmd.Parameters.AddWithValue("@source_visit", source_visite);
+
+            cmd.Parameters.AddWithValue("@ip", ip);
+            cmd.Parameters.AddWithValue("@from_page", from_url + "  Ref_Site: " + referal);
+            cmd.Parameters.AddWithValue("@lead_type", lead_type);
+
+
+            da.SelectCommand = cmd;
+            da.Fill(ds);
+
+            string sOutputstatus = string.Empty;
+            sOutputstatus = (string)cmd.Parameters["@leadid"].Value;
+
+            HttpContext.Current.Session["leadMain"] = sOutputstatus.ToString();
+            HttpContext.Current.Session["TypeNum"] = type.ToString();
+            HttpContext.Current.Session["output"] = sOutputstatus;
+
+            //---call elastic search method
+            //  var ESTime = DateTime.Now.ToString("MM/dd/yyyy h:mm:ss tt"); //DateTime.Now.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff"); //DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss.fff");
+            DateTime ESTime = DateTime.Now.ToUniversalTime().AddHours(-5);
+            //var ESDate = DateTime.Now.ToUniversalTime().AddHours(-5).ToString("MM-dd-yyyy");
+            // callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime);
+            callMethod(sOutputstatus.ToString(), "NEW LEAD", location, source, ESTime, "1900-01-01 00:00:00", "");
+            //end of elastic search
+
+            email_function(fname, lname, email, contact_no, Drp_year, Drp_make, Drp_model, "", "", location, vin, milege, source);
+
+
+        }
+
+        catch (Exception ex)
+        {
+
+
+            LogDetails.LogError(from_url, "insert_error_db", ex.ToString());
+
+        }
+
+
+    }
+
+
+    //-----------------Update lead end
+
+
+
+    public static void Insert_lead_social(string fname, string lname, string email, string contact_no, string year, string make,
+      string model, string vin, string milege, string source, string from_url, string referal, string source_visite, string ip, string lead_type,
+       string location, string zip, string city, string address)
+    {
+
+
+        try
+        {
+            HttpContext.Current.Session["thank_you"] = "allow";
+            if (HttpContext.Current.Session["ip_new"] != null)
+            {
+                ip = HttpContext.Current.Session["ip_new"].ToString();
+            }
+            if (HttpContext.Current.Session["url"] != null)
+            {
+                from_url = HttpContext.Current.Session["url"].ToString();
+            }
+            if (HttpContext.Current.Session["referal"] != null)
+            {
+                referal = HttpContext.Current.Session["referal"].ToString();
+            }
+
+
+
+            string Drp_year = year;
+            string Drp_make = make;
+            string Drp_model = model;
+            if (Drp_year.Trim() == "Select Year" || Drp_year == "0" || Drp_year == "--SELECT YEAR--")
+            {
+                Drp_year = " ";
+            }
+            if (Drp_make.Trim() == "Select Make" || Drp_make == "0" || Drp_year == "--SELECT MAKE--")
+            {
+                Drp_make = "";
+            }
+            if (Drp_model.Trim() == "Select Model" || Drp_model == "0" || Drp_year == "--SELECT MODEL--")
+            {
+                Drp_model = "";
+            }
+
+
+            string valid = "";
+            string inputDetails = "";
+            try
+            {
+
+                inputDetails = fname + "~" + lname + "~" + email + "~" +
+                 contact_no + "~" + year + "~" + make + "~" + model + "~" + vin + "~" + milege + "~" + source + "~" + "~" + ip + "~" + from_url + "~" + referal
+                 + "~" + "" + "~" + location + "~" + address + "~" + city + "~" + zip;
+
+                LogDetails.LogError(from_url, "Get_Start_insert_lead", inputDetails);
+
+            }
+            catch (Exception msg)
+            {
+                LogDetails.LogError(from_url, "Get_Start_insert_lead_log_error", msg.ToString());
+
+            }
+
+
+
+            valid = inputDetails;
+
+            var chars = "ABCD01EFGH23IJKL45MNOPQR67STUV89WXYZ";
+            var stringChars = new char[4];
+            var random = new Random();
+
+            for (int i = 0; i < stringChars.Length; i++)
+            {
+                stringChars[i] = chars[random.Next(chars.Length)];
+            }
+
+            var finalString = new String(stringChars);
+
+            int promocodestatus = 1;
+           
+
+            string ConfigString = ConfigurationManager.ConnectionStrings["autobuyConnectionString"].ConnectionString;
+            SqlConnection myconnect = new SqlConnection(ConfigString);
+            SqlDataAdapter da = new SqlDataAdapter();
+            DataSet ds = new DataSet();
+            SqlCommand cmd = new SqlCommand();
+
+            cmd.Connection = myconnect;
+            cmd.CommandText = "Wepaythemax_Lead_insert2_social";
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            cmd.Parameters.AddWithValue("@fname", fname);
+            cmd.Parameters.AddWithValue("@lname", lname);
+            cmd.Parameters.AddWithValue("@customerdate", "");
+            cmd.Parameters.AddWithValue("@phone", contact_no);
+            cmd.Parameters.AddWithValue("@email", email);
+            cmd.Parameters.AddWithValue("@year", Drp_year);
+            cmd.Parameters.AddWithValue("@make", Drp_make);
+            cmd.Parameters.AddWithValue("@model", Drp_model);
+            cmd.Parameters.AddWithValue("@vin", vin);
+            cmd.Parameters.AddWithValue("@mileage", milege);
+            cmd.Parameters.AddWithValue("@location", location);
+
+            cmd.Parameters.AddWithValue("@zip", zip);
+            cmd.Parameters.AddWithValue("@address", address);
+            cmd.Parameters.AddWithValue("@city", city);
+
+            cmd.Parameters.Add("@source", source);
+
+            SqlParameter leadid = new SqlParameter("@leadid", SqlDbType.VarChar, 100);
+            leadid.Direction = ParameterDirection.Output;
+            cmd.Parameters.Add(leadid);
+
+            string Email_sts = "Email";
+
+            cmd.Parameters.AddWithValue("@Email_status", Email_sts);
+            cmd.Parameters.AddWithValue("@customertime", "");
+
+            cmd.Parameters.AddWithValue("@pref_loc", location);
+            cmd.Parameters.AddWithValue("@source_visit", source_visite);
+
+
+            cmd.Parameters.AddWithValue("@ip", ip);
+            cmd.Parameters.AddWithValue("@from_page", from_url + "  Ref_Site: " + referal);
+            cmd.Parameters.AddWithValue("@lead_type", lead_type);
+            cmd.Parameters.AddWithValue("@promocode", finalString);
+            cmd.Parameters.AddWithValue("@promo_status", promocodestatus);
+
+
+            da.SelectCommand = cmd;
+            da.Fill(ds);
+
+            string sOutputstatussocial = string.Empty;
+            sOutputstatussocial = (string)cmd.Parameters["@leadid"].Value;
+
+            HttpContext.Current.Session["output"] = sOutputstatussocial;
+            HttpContext.Current.Session["TypeNum"] = lead_type.ToString();
+
+            //---call elastic search method
+            //  var ESTime = DateTime.Now.ToString("MM/dd/yyyy h:mm:ss tt"); //DateTime.Now.ToUniversalTime().ToString("yyyy'-'MM'-'dd'T'HH':'mm':'ss'.'fff"); //DateTime.Now.ToString("yyyy-MM-ddThh:mm:ss.fff");
+            DateTime ESTime = DateTime.Now.ToUniversalTime().AddHours(-5);
+            //var ESDate = DateTime.Now.ToUniversalTime().AddHours(-5).ToString("MM-dd-yyyy");
+
+            //callMethod(sOutputstatussocial.ToString(), "NEW LEAD", location, source, ESTime);
+            //end of elastic search
+            callMethod(sOutputstatussocial.ToString(), "NEW LEAD", location, source, ESTime, "1900-01-01 00:00:00", "");
+
+            string smscomment1 = System.Configuration.ConfigurationManager.AppSettings["SMSCOMMENT1"].ToString();
+            string smscomment2 = System.Configuration.ConfigurationManager.AppSettings["SMSCOMMENT2"].ToString();
+
+           // string promocode = smscomment1 + finalString + smscomment2;
+
+            var sms_response = "";
+            try
+            {
+                //smsresule.InnerText = "";
+                string resule = "Success sms:";
+                string failed = "Failed sms:";
+                if (contact_no.Trim() != "")
+                {
+
+
+
+
+
+
+                    string[] words = contact_no.Split(',');
+
+
+                    for (int i = 0; i < words.Length; i++)
+                    {
+
+
+
+
+                        StringBuilder sb = new StringBuilder();
+                        foreach (char c in words[i].ToString())
+                        {
+                            if ((c >= '0' && c <= '9'))
+                            {
+                                sb.Append(c);
+
+                            }
+                        }
+
+                        string phno = sb.ToString();
+
+                        string messagecontent = smscomment1 + "  \"" + finalString + "\"  " + smscomment2;
+
+                        var request = (HttpWebRequest)WebRequest.Create("https://api.clicksend.com/http/v2/send.php");
+
+
+                        var postData = "method=http";
+                        postData += "&username=wepaythemax";
+                        postData += "&key=CD9F09AC-637A-ED9E-D052-2C4217A14BA4";
+                        //postData += "&to=" + phno + "";
+                        postData += "&to=" + phno + "";
+                        postData += "&message=" + messagecontent;
+                        //postData += "&senderid=wepaythemax";
+
+                        var data = Encoding.ASCII.GetBytes(postData);
+
+                        request.Method = "POST";
+                        request.ContentType = "application/x-www-form-urlencoded";
+                        request.ContentLength = data.Length;
+
+                        using (var stream = request.GetRequestStream())
+                        {
+                            stream.Write(data, 0, data.Length);
+                        }
+
+                        var response = (HttpWebResponse)request.GetResponse();
+
+                        var responseString = new StreamReader(response.GetResponseStream()).ReadToEnd();
+
+                        sms_response = responseString;
+
+
+
+
+                        if (responseString.Contains("Success") == true)
+                        {
+                            resule += phno + ",";
+
+
+
+                        }
+
+                        else
+                        {
+
+                            failed += phno + ",";
+
+
+                        }
+
+
+
+
+
+
+
+                    }
+
+
+                }
+
+
+            }
+
+
+            catch (Exception msg)
+            {
+
+
+
+
+
+            }
+
+
+            email_function(fname, lname, email, contact_no, Drp_year, Drp_make, Drp_model, "", "", location, vin, milege, source);
+
+
+        }
+
+
+        catch (Exception ex)
+        {
+
+
+            LogDetails.LogError(from_url, "insert_error_db", ex.ToString());
+
+        }
+
+
+    }
+
+
+
+    public static void email_function(string fname,string lname, string email, string ph, string yr, string make, string model, string appt_date, string appt_time, 
+        string location,string vin,string mileage,string source)
+    {
+
+        HttpContext.Current.Session["Mdate"] = "";
+        location = location.ToLower();
+
+        HttpContext.Current.Session["Model"] = model.ToString();
+
+
+        string sToAddress1 = email;
+        string sSubject = "New Lead Schedule Request " + " ID #" + HttpContext.Current.Session["output"];
+
+        HttpContext.Current.Session["customermailid"] = sToAddress1 + "~" + sSubject;
+        string sXMLString = string.Empty;
+
+
+        //sXMLString = "<ROOT><Leadid>" + HttpContext.Current.Session["output"].ToString() + "</Leadid>";
+        //sXMLString += "<name>" + name + "</name>";
+        //sXMLString += "<email>" + email + "</email>";
+        //sXMLString += "<phone>" + ph + "</phone>";
+
+        //sXMLString += "<year>" + yr + "</year>";
+        //sXMLString += "<make>" + make + "</make>";
+        //sXMLString += "<model>" + model + "</model>";
+        //sXMLString += "<sdate>" + appt_date + "</sdate>";
+        //sXMLString += "<stime>" + appt_time + "</stime>";
+
+        //sXMLString += "<Preferred_Location>" + location + "</Preferred_Location></ROOT>";
+
+        sXMLString = "<ROOT><Leadid>" + HttpContext.Current.Session["output"].ToString() + "</Leadid>";
+        sXMLString += "<fname>" + fname + "</fname>";
+        sXMLString += "<lname>" + lname + "</lname>";
+        //sXMLString += "<address>" + txt_address.Text + "</address>";
+        sXMLString += "<phone>" + ph + "</phone>";
+        sXMLString += "<email>" + email + "</email>";
+        sXMLString += "<year>" + yr + "</year>";
+        sXMLString += "<make>" + make + "</make>";
+
+        if (model.Contains('&'))
+        {
+            model = Regex.Replace(model, "&", "&amp;");
+            sXMLString += "<model>" + model + "</model>";
+        }
+        else
+        {
+            sXMLString += "<model>" + model + "</model>";
+        }
+
+        sXMLString += "<vin>" + vin + "</vin>";
+        sXMLString += "<mileage>" + mileage + "</mileage>";
+        //20130606
+        //sXMLString += "<city>" + txt_city.Text + "</city>";
+        //sXMLString += "<state>" + txt_state.Text + "</state>";
+        //sXMLString += "<zipcode>" + txt_zip.Text + "</zipcode>";
+
+        sXMLString += "<source>" + source + "</source>";
+
+        sXMLString += "<Preferred_Location>" + location + "</Preferred_Location>";
+        sXMLString += "<vehicletype>Cars</vehicletype></ROOT>";
+
+
+
+
+        //<<Button >>Get Driving Directions
+        //<<Button >> Add it to my calendar
+        //<<Button >> Call our store for more information
+
+        string loc_in = " 223 East New Haven Ave, Melbourne, FL 32901";
+        string ph_no = "321-206-3887";
+        string hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST,Sun By Appointment only  ";
+        string adtext = "The address of your appointment location is";
+
+        string direction = "https://www.google.com/maps/place/223+E+New+Haven+Ave,+Melbourne,+FL+32901/@28.0783451,-80.6189772,17z/data=!3m1!4b1!4m5!3m4!1s0x88de11f1432a7167:0x5e6ed928c63bd537!8m2!3d28.0783451!4d-80.6167885";
+
+
+
+        if (location.ToUpper() == "WEST PALM BEACH")
+        {
+            loc_in = " 1500 Belvedere Road, West Palm Beach, FL 33406";
+            ph_no = "561-797-2400";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST ,Sun 12PM - 5PM EST";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@26.6904453,-80.0748231,17z/data=!4m13!1m7!3m6!1s0x88d8d6497a15482b:0xd494c259b51cb13d!2s1500+Belvedere+Rd,+West+Palm+Beach,+FL+33406,+USA!3b1!8m2!3d26.6904453!4d-80.0726344!3m4!1s0x88d8d6497bac58b5:0x5a4107f17a567766!8m2!3d26.690445!4d-80.072634";
+
+
+
+
+
+        }
+        else if (location.ToUpper() == "STUART")
+        {
+            loc_in = " 1957 SE Federal Hwy, Stuart, FL 34994";
+            ph_no = "772-210-5357";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST, Sun By Appointment only ";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@27.1799839,-80.2403104,17z/data=!4m13!1m7!3m6!1s0x88dedd0c0f5e8333:0x24078a6f09d08ab8!2s1957+SE+Federal+Hwy,+Stuart,+FL+34994,+USA!3b1!8m2!3d27.1799839!4d-80.2381217!3m4!1s0x88dedd0c0f7dccbd:0xf96e29234e9dbf21!8m2!3d27.1799854!4d-80.2381382";
+
+
+        }
+        else if (location.ToUpper() == "FORT LAUDERDALE")
+        {
+            loc_in = " 301 N State Road 7, Margate, FL 33063";
+            ph_no = "954-532-2260";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST, Sun 12PM - 5PM EST";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@26.2333448,-80.2072821,17z/data=!4m13!1m7!3m6!1s0x88d9048c3d76adf5:0x214af3e14bcf6f1f!2s301+FL-7,+Margate,+FL+33063,+USA!3b1!8m2!3d26.2333448!4d-80.2050934!3m4!1s0x88d9048c3db24cf9:0x1b39e18027738fa6!8m2!3d26.233345!4d-80.205093";
+
+
+
+
+        }
+        else if (location.ToUpper() == "MIAMI")
+        {
+            loc_in = " 2001 NW 167th ST, Miami Gardens, FL 33056";
+            ph_no = "305-363-3161";
+            hours = " Mon-Fri 10AM - 8PM EST, Sat 9AM - 6PM EST, Sun 12PM - 5PM EST ";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@25.9273466,-80.2371519,17z/data=!4m13!1m7!3m6!1s0x88d9afb4562cb351:0xdfb0bfe433e0bcc3!2s2001+NW+167th+St,+Miami+Gardens,+FL+33056,+USA!3b1!8m2!3d25.9273466!4d-80.2349632!3m4!1s0x88d9afb4f882d227:0xfe792f9b6d0a3133!8m2!3d25.927347!4d-80.234963";
+
+
+
+
+        }
+        else if (location.ToUpper() == "MELBOURNE")
+        {
+            loc_in = " 223 East New Haven Ave, Melbourne, FL 32901";
+            ph_no = "321-206-3887";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST,Sun By Appointment only  ";
+
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@28.0783638,-80.6189682,17z/data=!3m1!4b1!4m5!3m4!1s0x88de11f143270a6f:0x4c0312dbc7c4ab72!8m2!3d28.0783638!4d-80.6167795";
+
+
+        }
+        else if (location.ToUpper() == "ORLANDO")
+        {
+
+            loc_in = "1350 W Landstreet Rd, Orlando, FL 32824";
+            ph_no = "407-842-8305";
+            // hours = "Mon 10AM - 6PM EST | Tue 10AM - 4.30PM EST | Wed 10AM - 6PM EST | Thu Closed | Fri-Sat 10AM - 6PM EST | Sun  Closed";
+            hours = "Mon-Sat 10AM - 6PM EST | Sun  Closed";
+
+            direction = "https://www.google.com/maps/place/AutoBuy+-+Orlando/@28.4354245,-81.399375,17z/data=!3m1!4b1!4m5!3m4!1s0x88e77dba846441e7:0xe098b1b569ef9a53!8m2!3d28.4354245!4d-81.3971863";
+
+
+        }
+        else if (location.ToUpper() == "DAYTONA")
+        {
+           
+
+
+
+            loc_in = "1305 Indian Lake Rd, Daytona Beach, FL 32124";
+            ph_no = "386-219-1037";
+            hours = "Mon-Thu 9AM - 7PM EST, Fri Closed, Sat 9AM - 6PM EST,Sun By Appointment only  ";
+
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@29.1423543,-81.1502263,3451m/data=!3m1!1e3!4m13!1m7!3m6!1s0x88e6df9366bbd035:0xba5c6195ac4db7cf!2s1305+Indian+Lake+Rd,+Daytona+Beach,+FL+32124,+USA!3b1!8m2!3d29.141469!4d-81.140008!3m4!1s0x88e6df9366bbd035:0xd39becbddaea4d49!8m2!3d29.1414909!4d-81.1400387";
+        }
+
+        //else if (location.ToUpper() == "LONGWOOD")
+        //{
+
+
+
+
+        //    loc_in = "2907 North US Highway 17 92,Longwood FL 32750";
+        //    ph_no = "407-842-8436";
+        //    hours = "Mon-Tue  10AM - 6PM EST | Wed Closed | Thu-Sat   10AM - 6PM EST | Sun  Closed";
+
+        //    direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@29.5719649,-90.7472161,6z/data=!4m19!1m13!4m12!1m4!2m2!1d-91.0829385!2d30.4278959!4e1!1m6!1m2!1s0x88e76de2f6213c91:0x58cb4614d787720d!2sAUTOBUY+-+We+Pay+The+Max,+2907+N+US+Hwy+17+92,+Longwood,+FL+32750!2m2!1d-81.3264576!2d28.7063358!3m4!1s0x88e76de2f6213c91:0x58cb4614d787720d!8m2!3d28.7063358!4d-81.3264576";
+        //    // direction = "https://www.google.com/maps/place/3100+Sade+Park+Ln,+Sanford,+FL+32771/@28.8006264,-81.3078856,15z/data=!4m5!3m4!1s0x88e712fb25922b03:0xb6cc40873f219739!8m2!3d28.8011144!4d-81.3032322";
+        //}
+
+        else if (location.ToUpper() == "CUTLER BAY")
+        {
+            loc_in = "20302 S Dixie Hwy, Cutler Bay, FL 33189";
+            ph_no = "786-563-1817";
+            hours = "Mon-Fri   10AM - 7PM EST | Sat   9AM - 6PM EST | Sun   12PM - 5PM EST";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@25.5785846,-80.3721642,17z/data=!4m13!1m7!3m6!1s0x88d9c37f1fbba2d5:0xe491c33391c25675!2s20302+S+Dixie+Hwy,+Cutler+Bay,+FL+33189,+USA!3b1!8m2!3d25.5785846!4d-80.3699755!3m4!1s0x88d9c36cf079152f:0xdb603e35ec23b5b8!8m2!3d25.578585!4d-80.369976";
+        }
+
+        else if(location.ToUpper() == "TAMPA")
+        {
+            loc_in = "";
+            ph_no = "813-793-2032";
+            hours = "";
+            direction = "";
+        }
+        else if (location.ToUpper() == "SMITHTOWN")
+        {
+            loc_in = "733 A Middle Country Rd, Smithtown, NY 11780";
+            ph_no = "631-246-1818";
+            hours = "Mon-Fri   10AM - 7PM EST | Sat   9AM - 6PM EST | Sun   Closed";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@40.861308,-73.1525403,18z/data=!3m1!4b1!4m8!1m2!2m1!1sAUTOBUY+-+We+Pay+The+Max,+Middle+Country+Road,+Saint+James,+Smithtown,+NY,+USA!3m4!1s0x89e8399b373b47ab:0x8c9c84f465e65365!8m2!3d40.861308!4d-73.151446";
+        }
+        else if (location.ToUpper() == "CARLE PLACE")
+        {
+            loc_in = "196 Glen Cove Rd, Carle Place, NY 11514";
+            ph_no = "516-218-9241";
+            hours = "";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@40.4784246,-74.9307181,6.98z/data=!4m18!1m12!4m11!1m3!2m2!1d-73.7680381!2d40.2941902!1m6!1m2!1s0x89c2875d31b9b227:0xd0aa97438265973b!2sAUTOBUY+-+We+Pay+The+Max,+196+Glen+Cove+Rd,+Carle+Place,+NY+11514,+USA!2m2!1d-73.6178232!2d40.74717!3m4!1s0x89c2875d31b9b227:0xd0aa97438265973b!8m2!3d40.74717!4d-73.6178232";
+        }
+
+        //Miami Location hours: <<<display customer selected location>>>
+
+        string val = "Thank you for scheduling appointment online to appraisal your vehicle. You are one step closer to get the MAX for your vehicle.\n\t\n\t";
+
+        val += "Your appointment is confirmed for " + appt_date + " @ " + appt_time + " in our " + location + " store, located at " + loc_in + " \n\t\n\t";
+
+
+
+
+
+
+
+
+        val += "Like to know more about us? please visit us at www.wepaythemax.com, where you always get the MAX! or call us at " + ph_no + " to talk to our friendly customer care center.\n\t\n\t";
+
+
+        val += location.ToUpper() + "  Location hours:  " + hours + "\n\t\n\t";
+
+
+
+
+        //string dispMsg="Your appointment Date "+  + " ,Time "+ HttpContext.Current.Session["MTime"].ToString() + ".";
+
+        if (location.ToUpper() != "SMITHTOWN")
+        {
+            adtext = "";
+            loc_in = "";
+        }
+
+
+
+            string xmlstrig1 = "<ROOT><message>" + "" + "</message>";
+
+        xmlstrig1 += "<date>" + appt_date + "</date>";
+        xmlstrig1 += "<time>" + appt_time + "</time>";
+        xmlstrig1 += "<addrtxt>" + adtext + "</addrtxt>";
+        xmlstrig1 += "<location>" + location + "</location>";
+
+        xmlstrig1 += "<loc_in>" + loc_in + "</loc_in>";
+
+        xmlstrig1 += "<href>" + direction + "</href>";
+
+        xmlstrig1 += "<ph>" + ph_no + "</ph>";
+
+        xmlstrig1 += "<hr>" + location.ToUpper() + "  Location hours:  " + hours + "</hr>";
+
+        xmlstrig1 += "<dir>Direction</dir>";
+
+        xmlstrig1 += "<call>Phone</call>";
+
+        xmlstrig1 += "</ROOT>";
+
+
+
+        HttpContext.Current.Session["pre_loc"] = location;
+       
+
+        final_email(xmlstrig1, location, sXMLString);
+    }
+
+    //--------------------------------------
+
+    public static void email_function2(string MDate,string MTime)
+    {
+
+       string location = HttpContext.Current.Session["Location"].ToString();
+        string model= HttpContext.Current.Session["Model"].ToString();
+        string make = HttpContext.Current.Session["Make"].ToString();
+        string year = HttpContext.Current.Session["Year"].ToString();
+        string lead = HttpContext.Current.Session["output"].ToString();
+
+        if(year == "")
+        {
+            year = HttpContext.Current.Session["YearNew"].ToString();
+            
+        }
+        if(make == "")
+        {
+            make = HttpContext.Current.Session["MakeNew"].ToString();
+         }
+        if (model == "")
+        {
+            if (!string.IsNullOrEmpty(HttpContext.Current.Session["ModelNew"] as string))
+            {
+                string mdel = HttpContext.Current.Session["ModelNew"].ToString();
+                if (mdel != "")
+                {
+                    model = HttpContext.Current.Session["ModelNew"].ToString();
+                }
+            }
+            else
+            {
+                model = "";
+            }
+
+        }
+
+        HttpContext.Current.Session["Mdate"] = MDate;
+        HttpContext.Current.Session["Mtime"] = MTime;
+        string sToAddress1 = HttpContext.Current.Session["Email"].ToString();
+        string sSubject = "Your appointment is confirmed!";
+
+        HttpContext.Current.Session["customermailid"] = sToAddress1 + "~" + sSubject;
+        string sXMLString = string.Empty;
+
+       
+
+        //sXMLString = "<ROOT><Leadid>" + HttpContext.Current.Session["output"].ToString() + "</Leadid>";
+        //sXMLString += "<name>" + name + "</name>";
+        //sXMLString += "<email>" + email + "</email>";
+        //sXMLString += "<phone>" + ph + "</phone>";
+
+        //sXMLString += "<year>" + yr + "</year>";
+        //sXMLString += "<make>" + make + "</make>";
+        //sXMLString += "<model>" + model + "</model>";
+        //sXMLString += "<sdate>" + appt_date + "</sdate>";
+        //sXMLString += "<stime>" + appt_time + "</stime>";
+
+        //sXMLString += "<Preferred_Location>" + location + "</Preferred_Location></ROOT>";
+
+        sXMLString = "<ROOT><Leadid>" + HttpContext.Current.Session["output"].ToString() + "</Leadid>";
+        //sXMLString += "<fname>" + fname + "</fname>";
+        //sXMLString += "<lname>" + lname + "</lname>";
+        ////sXMLString += "<address>" + txt_address.Text + "</address>";
+        //sXMLString += "<phone>" + ph + "</phone>";
+        //sXMLString += "<email>" + email + "</email>";
+        //sXMLString += "<year>" + yr + "</year>";
+        //sXMLString += "<make>" + make + "</make>";
+       // sXMLString += "<model>" + model + "</model>";
+        //sXMLString += "<vin>" + vin + "</vin>";
+        //sXMLString += "<mileage>" + mileage + "</mileage>";
+        ////20130606
+        ////sXMLString += "<city>" + txt_city.Text + "</city>";
+        ////sXMLString += "<state>" + txt_state.Text + "</state>";
+        ////sXMLString += "<zipcode>" + txt_zip.Text + "</zipcode>";
+
+        //sXMLString += "<source>" + source + "</source>";
+
+
+        sXMLString += "<Preferred_Location>" + location + "</Preferred_Location>";
+        sXMLString += "<vehicletype>Cars</vehicletype></ROOT>";
+
+
+
+        string loc_in = " 223 East New Haven Ave, Melbourne, FL 32901";
+        string ph_no = "321-206-3887";
+        string hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST,Sun By Appointment only  ";
+
+
+        string direction = "https://www.google.com/maps/place/223+E+New+Haven+Ave,+Melbourne,+FL+32901/@28.0783451,-80.6189772,17z/data=!3m1!4b1!4m5!3m4!1s0x88de11f1432a7167:0x5e6ed928c63bd537!8m2!3d28.0783451!4d-80.6167885";
+        string review = "";
+
+
+        if (location.ToUpper() == "WEST PALM BEACH")
+        {
+            loc_in = " 1500 Belvedere Road, West Palm Beach, FL 33406";
+            ph_no = "561-797-2400";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST ,Sun 12PM - 5PM EST";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@26.6904453,-80.0748231,17z/data=!4m13!1m7!3m6!1s0x88d8d6497a15482b:0xd494c259b51cb13d!2s1500+Belvedere+Rd,+West+Palm+Beach,+FL+33406,+USA!3b1!8m2!3d26.6904453!4d-80.0726344!3m4!1s0x88d8d6497bac58b5:0x5a4107f17a567766!8m2!3d26.690445!4d-80.072634";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=ZmdhW7TID8ruvAS9i72wCg&amp;q=autobuy+west+palm+beach&amp;oq=autobuy+west+palm+beach&amp;gs_l=psy-ab.3..0l2j0i22i30k1l2.10841.16479.0.17078.12.5.3.4.4.0.122.591.0j5.5.0....0...1c.1.64.psy-ab..0.12.637...0i13k1.0.CJNcV62ktvY#lrd=0x88d8d6497bac58b5:0x5a4107f17a567766,1,,,";
+
+
+
+        }
+        else if (location.ToUpper() == "STUART")
+        {
+            loc_in = " 1957 SE Federal Hwy, Stuart, FL 34994";
+            ph_no = "772-210-5357";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST, Sun By Appointment only ";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@27.1799839,-80.2403104,17z/data=!4m13!1m7!3m6!1s0x88dedd0c0f5e8333:0x24078a6f09d08ab8!2s1957+SE+Federal+Hwy,+Stuart,+FL+34994,+USA!3b1!8m2!3d27.1799839!4d-80.2381217!3m4!1s0x88dedd0c0f7dccbd:0xf96e29234e9dbf21!8m2!3d27.1799854!4d-80.2381382";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=OmZhW8DYI8rjvATFqLLgBg&amp;q=autobuy+stuart+florida&amp;oq=autobuy+stuart&amp;gs_l=psy-ab.1.1.0l2.51390.52697.0.54085.6.3.0.3.3.0.122.345.0j3.3.0....0...1c.1.64.psy-ab..0.6.362...0i22i30k1j0i22i10i30k1.0.qIRObPC9yDc#lrd=0x88dedd0c0f7dccbd:0xf96e29234e9dbf21,1,,,";
+
+        }
+        else if (location.ToUpper() == "FORT LAUDERDALE")
+        {
+            loc_in = " 301 N State Road 7, Margate, FL 33063";
+            ph_no = "954-532-2260";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST, Sun 12PM - 5PM EST";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@26.2333448,-80.2072821,17z/data=!4m13!1m7!3m6!1s0x88d9048c3d76adf5:0x214af3e14bcf6f1f!2s301+FL-7,+Margate,+FL+33063,+USA!3b1!8m2!3d26.2333448!4d-80.2050934!3m4!1s0x88d9048c3db24cf9:0x1b39e18027738fa6!8m2!3d26.233345!4d-80.205093";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=s2VhW_GGKYn5vASenY3ADw&amp;q=autobuy+fort+lauderdale&amp;oq=autobuy+fort&amp;gs_l=psy-ab.3.0.0l2.51653.68303.0.69584.5.5.0.0.0.0.134.604.0j5.5.0....0...1c.1.64.psy-ab..0.5.601...0i67k1j0i22i30k1j0i22i10i30k1.0.EJSyWlBXS_8#lrd=0x88d9048c3db24cf9:0x1b39e18027738fa6,1,,,";
+
+
+        }
+        else if (location.ToUpper() == "MIAMI")
+        {
+            loc_in = " 2001 NW 167th ST, Miami Gardens, FL 33056";
+            ph_no = "305-363-3161";
+            hours = " Mon-Fri 10AM - 8PM EST, Sat 9AM - 6PM EST, Sun 12PM - 5PM EST ";
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@25.9273466,-80.2371519,17z/data=!4m13!1m7!3m6!1s0x88d9afb4562cb351:0xdfb0bfe433e0bcc3!2s2001+NW+167th+St,+Miami+Gardens,+FL+33056,+USA!3b1!8m2!3d25.9273466!4d-80.2349632!3m4!1s0x88d9afb4f882d227:0xfe792f9b6d0a3133!8m2!3d25.927347!4d-80.234963";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=g2NhW8zuD4H_vgTF_p64CQ&amp;q=autobuy+miami&amp;oq=autobuy+mia&amp;gs_l=psy-ab.1.0.0l4j0i22i30k1l2.513186.516646.0.517960.4.4.0.0.0.0.137.481.0j4.4.0....0...1c.1.64.psy-ab..0.4.480...0i67k1.0.eJyGLF5-WDk#lrd=0x88d9afb4f882d227:0xfe792f9b6d0a3133,1,,,";
+
+
+        }
+        else if (location.ToUpper() == "MELBOURNE")
+        {
+            loc_in = " 223 East New Haven Ave, Melbourne, FL 32901";
+            ph_no = "321-206-3887";
+            hours = "Mon-Fri 9AM - 7PM EST, Sat 9AM - 6PM EST,Sun By Appointment only  ";
+
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@28.0783638,-80.6189682,17z/data=!3m1!4b1!4m5!3m4!1s0x88de11f143270a6f:0x4c0312dbc7c4ab72!8m2!3d28.0783638!4d-80.6167795";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=cWZhW9bXLor4vgTskK2QBA&amp;q=autobuy+melbourne&amp;oq=autobuy+me&amp;gs_l=psy-ab.3.0.0l3j0i22i30k1l7.36892.37645.0.38983.4.4.0.0.0.0.126.472.0j4.4.0....0...1c.1.64.psy-ab..0.4.470...0i131k1.0.hMzUF_zVyk0#lrd=0x88de11f143270a6f:0x4c0312dbc7c4ab72,1,,,";
+
+        }
+        else if (location.ToUpper() == "ORLANDO")
+        {
+
+            loc_in = "1350 W Landstreet Rd, Orlando, FL 32824";
+            ph_no = "407-842-8305";
+            //hours = "Mon 10AM - 6PM EST | Tue 10AM - 4.30PM EST | Wed 10AM - 6PM EST | Thu Closed | Fri-Sat 10AM - 6PM EST | Sun  Closed";
+            hours = "Mon-Sat 10AM - 6PM EST | Sun  Closed";
+
+            direction = "https://www.google.com/maps/place/AutoBuy+-+Orlando/@28.4354245,-81.399375,17z/data=!3m1!4b1!4m5!3m4!1s0x88e77dba846441e7:0xe098b1b569ef9a53!8m2!3d28.4354245!4d-81.3971863";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=mWZhW_r_NMXSvwTzta7YDg&amp;q=autobuy+orlando&amp;oq=autobuy+orla&amp;gs_l=psy-ab.1.0.0l2.25971.27023.0.28161.4.4.0.0.0.0.122.353.0j3.3.0....0...1c.1.64.psy-ab..1.3.352...0i22i30k1.0.Ms9bAqYqchk#lrd=0x88e77dba846441e7:0xe098b1b569ef9a53,1,,,";
+
+        }
+        else if (location.ToUpper() == "DAYTONA")
+        {
+
+
+
+
+            loc_in = "1305 Indian Lake Rd, Daytona Beach, FL 32124";
+            ph_no = "386-219-1037";
+            hours = "Mon-Thu 9AM - 7PM EST | Fri Closed | Sat 9AM - 6PM EST | Sun By Appointment only  ";
+
+
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@29.1423543,-81.1502263,3451m/data=!3m1!1e3!4m13!1m7!3m6!1s0x88e6df9366bbd035:0xba5c6195ac4db7cf!2s1305+Indian+Lake+Rd,+Daytona+Beach,+FL+32124,+USA!3b1!8m2!3d29.141469!4d-81.140008!3m4!1s0x88e6df9366bbd035:0xd39becbddaea4d49!8m2!3d29.1414909!4d-81.1400387";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=t2ZhW5rDAsbZvASau4jIDg&amp;q=autobuy+daytona&amp;oq=autobuy+dayt&amp;gs_l=psy-ab.3.0.0j0i22i30k1.29127.29645.0.30822.4.4.0.0.0.0.125.469.0j4.4.0....0...1c.1.64.psy-ab..0.4.465....0.qLn9hsWqKSI#lrd=0x88e6df9366bbd035:0xd39becbddaea4d49,1,,,";
+        }
+
+        //else if (location.ToUpper() == "LONGWOOD")
+        //{
+
+
+        //    loc_in = "2907 North US Highway 17 92,Longwood FL 32750";
+        //    ph_no = "407-842-8436";
+        //    hours = "Mon-Tue  10AM - 6PM EST | Wed Closed | Thu-Sat   10AM - 6PM EST | Sun  Closed";
+
+
+        //    direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@29.5719649,-90.7472161,6z/data=!4m19!1m13!4m12!1m4!2m2!1d-91.0829385!2d30.4278959!4e1!1m6!1m2!1s0x88e76de2f6213c91:0x58cb4614d787720d!2sAUTOBUY+-+We+Pay+The+Max,+2907+N+US+Hwy+17+92,+Longwood,+FL+32750!2m2!1d-81.3264576!2d28.7063358!3m4!1s0x88e76de2f6213c91:0x58cb4614d787720d!8m2!3d28.7063358!4d-81.3264576";
+        //    // direction = "https://www.google.com/maps/place/3100+Sade+Park+Ln,+Sanford,+FL+32771/@28.8006264,-81.3078856,15z/data=!4m5!3m4!1s0x88e712fb25922b03:0xb6cc40873f219739!8m2!3d28.8011144!4d-81.3032322";
+
+        //    review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=AWdhW8SxDpbEvwSXzKawBw&amp;q=autobuy+sanford&amp;oq=autobuy+sanfo&amp;gs_l=psy-ab.3.0.0j0i22i30k1.3798.6089.0.7304.6.6.0.0.0.0.132.729.0j6.6.0....0...1c.1.64.psy-ab..0.6.727...0i22i10i30k1.0.ILDE_HChvVc#lrd=0x88e712fad7e1bcf7:0xbc69f820071149fc,1,,,";
+        //}
+
+
+        else if (location.ToUpper() == "CUTLER BAY")
+        {
+            loc_in = "20302 S Dixie Hwy, Cutler Bay, FL 33189";
+            ph_no = "786-563-1817";
+            hours = "Mon-Fri   10AM - 7PM EST | Sat   9AM - 6PM EST | Sun   12PM - 5PM EST";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@25.5785846,-80.3721642,17z/data=!4m13!1m7!3m6!1s0x88d9c37f1fbba2d5:0xe491c33391c25675!2s20302+S+Dixie+Hwy,+Cutler+Bay,+FL+33189,+USA!3b1!8m2!3d25.5785846!4d-80.3699755!3m4!1s0x88d9c36cf079152f:0xdb603e35ec23b5b8!8m2!3d25.578585!4d-80.369976";
+
+            review = "https://www.google.com/search?safe=active&amp;rlz=1C1CHBF_enIN794IN794&amp;ei=imVhW-mWC8PhvAT1w4qwAg&amp;q=autobuy+cutler+bay&amp;oq=autobuy+cu&amp;gs_l=psy-ab.3.0.0j0i22i10i30k1j0i22i30k1j0i22i10i30k1j0i22i30k1l3.37669.37745.0.40284.2.2.0.0.0.0.143.143.0j1.1.0....0...1c.1.64.psy-ab..1.1.143....0.tNYKjTduJA8#lrd=0x88d9c36cf079152f:0xdb603e35ec23b5b8,1,,,";
+        }
+
+        else if (location.ToUpper() == "TAMPA")
+        {
+            loc_in = "";
+            ph_no = "813-793-2032";
+            hours = "";
+            direction = "";
+        }
+        else if (location.ToUpper() == "SMITHTOWN")
+        {
+            loc_in = "733 A Middle Country Rd, Smithtown, NY 11780";
+            ph_no = "631-246-1818";
+            hours = "Mon-Fri   10AM - 7PM EST | Sat   9AM - 6PM EST | Sun   Closed";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@40.861308,-73.1525403,18z/data=!3m1!4b1!4m8!1m2!2m1!1sAUTOBUY+-+We+Pay+The+Max,+Middle+Country+Road,+Saint+James,+Smithtown,+NY,+USA!3m4!1s0x89e8399b373b47ab:0x8c9c84f465e65365!8m2!3d40.861308!4d-73.151446";
+        }
+        else if (location.ToUpper() == "CARLE PLACE")
+        {
+            loc_in = "196 Glen Cove Rd, Carle Place, NY 11514";
+            ph_no = "516-218-9241";
+            hours = "";
+            direction = "https://www.google.com/maps/place/AUTOBUY+-+We+Pay+The+Max/@40.4784246,-74.9307181,6.98z/data=!4m18!1m12!4m11!1m3!2m2!1d-73.7680381!2d40.2941902!1m6!1m2!1s0x89c2875d31b9b227:0xd0aa97438265973b!2sAUTOBUY+-+We+Pay+The+Max,+196+Glen+Cove+Rd,+Carle+Place,+NY+11514,+USA!2m2!1d-73.6178232!2d40.74717!3m4!1s0x89c2875d31b9b227:0xd0aa97438265973b!8m2!3d40.74717!4d-73.6178232";
+        }
+
+        //Miami Location hours: <<<display customer selected location>>>
+
+        string val = "Thank you for scheduling appointment online to appraisal your vehicle. You are one step closer to get the MAX for your vehicle.\n\t\n\t";
+
+      
+
+
+
+
+
+
+
+        val += "Like to know more about us? please visit us at www.wepaythemax.com, where you always get the MAX! or call us at " + ph_no + " to talk to our friendly customer care center.\n\t\n\t";
+
+
+        val += location.ToUpper() + "  Location hours:  " + hours + "\n\t\n\t";
+
+
+
+
+        string dispMsg =MDate + "," + MTime;
+
+
+
+
+        string xmlstrig1 = "<ROOT><message>" + "" + "</message>";
+        xmlstrig1 += "<DisDT>" + dispMsg + "</DisDT>";
+        xmlstrig1 += "<ph>" + ph_no + "</ph>";
+        xmlstrig1 += "<locaddr>" + loc_in + "</locaddr>";
+        xmlstrig1 += "<leadid>" + lead + "</leadid>";
+        xmlstrig1 += "<year>" + year + "</year>";
+        xmlstrig1 += "<make>" + make + "</make>";
+        if (model.Contains('&'))
+        {
+            model = Regex.Replace(model, "&", "&amp;");
+            xmlstrig1 += "<model>" + model + "</model>";
+        }
+        else
+        {
+            xmlstrig1 += "<model>" + model + "</model>";
+        }
+        xmlstrig1 += "<location>" + location + "</location>";
+        xmlstrig1 += "<reviewlink>" + review + "</reviewlink>";
+        xmlstrig1 += "<reviewname>Google Review</reviewname>";
+        xmlstrig1 += "</ROOT>";
+
+
+
+        HttpContext.Current.Session["pre_loc"] = location;
+
+
+        final_email_2(xmlstrig1, location, sXMLString);
+    }
+
+
+    //--------------------------------------------
+
+    public static void final_email(string schedule_email, string pre_loc, string mailbody)
+    {
+
+        try
+        {
+            string sBCC = string.Empty;
+            string sCC = string.Empty;
+
+            sBCC = ConfigurationManager.AppSettings["for_bcc"].ToString();
+            string sFromAddress = ConfigurationManager.AppSettings["CONTACTMAILFROM"].ToString();
+
+            string sToAddress = "raju@rcktechiees.com";
+            if (HttpContext.Current.Session["pre_loc"] != null)
+            {
+                if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "MIAMI")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_miami"].ToString();
+
+                }
+
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "WEST PALM BEACH")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_wbm"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "STUART")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_stu"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "FORT LAUDERDALE")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_Margate"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "MELBOURNE")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_Melbourne"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "ORLANDO")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_orlando"].ToString();
+
+                }
+
+
+
+                else
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO"].ToString();
+                }
+
+                HttpContext.Current.Session["pre_loc"] = null;
+            }
+
+            // string sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO"].ToString();
+
+            string sXSLPath = System.Web.HttpContext.Current.Server.MapPath(ConfigurationManager.AppSettings["xlxt_schedule"].ToString());
+
+
+
+            // string sXSLPath = Server.MapPath(ConfigurationManager.AppSettings["ACTIVATEXSLT"].ToString());
+            //if (Session["mail_temp_type"] != null)
+            //{
+
+            //    if (Session["mail_temp_type"] == "sec")
+            //    {
+            //        sXSLPath = Server.MapPath(ConfigurationManager.AppSettings["xlxt_schedule"].ToString());
+            //    }
+
+            //}
+
+            string sXSLPathCustomer = null;
+            string sBody = Transform(mailbody, sXSLPath);
+
+            sCC = ConfigurationManager.AppSettings["CONTACTMAILTOCC"].ToString();
+            SendMail(sFromAddress, sToAddress, sCC, HttpContext.Current.Session["customermailid"].ToString().Split('~')[1], sBody);
+
+            string mailCode = ConfigurationManager.AppSettings["MailCODE"].ToString();
+
+
+
+            if (mailCode == "1")
+            {
+                sXSLPathCustomer = System.Web.HttpContext.Current.Server.MapPath(ConfigurationManager.AppSettings["Customer_mail_schedule"].ToString());
+                string customerbody = Transform(schedule_email, sXSLPathCustomer);
+
+
+                if (HttpContext.Current.Session["customermailid"].ToString().Split('~')[0] != "")
+                {
+                    SendMail(sFromAddress, HttpContext.Current.Session["customermailid"].ToString().Split('~')[0], sBCC, HttpContext.Current.Session["customermailid"].ToString().Split('~')[1], customerbody);
+                }
+
+            }
+            var loct = HttpContext.Current.Session["Location"].ToString();
+            if (loct.ToUpper() == "DAYTONA" || loct.ToUpper() == "TAMPA" || loct.ToUpper() == "CARLE PLACE" )
+            {
+                sXSLPathCustomer = System.Web.HttpContext.Current.Server.MapPath(ConfigurationManager.AppSettings["Customer_mail_schedule_v3"].ToString());
+                string customerbody = Transform(schedule_email, sXSLPathCustomer);
+
+                SendMail(sFromAddress, HttpContext.Current.Session["customermailid"].ToString().Split('~')[0], sBCC, HttpContext.Current.Session["customermailid"].ToString().Split('~')[1], customerbody);
+            }
+        }
+        catch(Exception ex)
+        {
+            LogDetails.LogError("", "Email_Content_Error", ex.ToString());
+        }
+
+    }
+
+
+    public static void SendMail(string sFrom, string sTo, string sCC, string sSubject, string sBody)
+    {
+
+       // sTo = "raju@rcktechiees.com";
+
+
+        //string sCC = ConfigurationManager.AppSettings["CONTACTMAILTOCC"].ToString();
+
+        string sBCC = ConfigurationManager.AppSettings["CONTACTMAILTOBCC"].ToString();
+        string sHost = ConfigurationManager.AppSettings["MAILHOST"].ToString();
+        int sPort = Convert.ToInt32(ConfigurationManager.AppSettings["MAILPORT"]);
+        string sAuthFlag = ConfigurationManager.AppSettings["MAILAUTHFLAG"].ToString();
+        string sAuthUsername = ConfigurationManager.AppSettings["MAILAUTHUSERNAME"].ToString();
+        string sAuthPassword = ConfigurationManager.AppSettings["MAILAUTHPASSWORD"].ToString();
+
+        try
+        {
+            using (MailMessage msg = new MailMessage())
+            {
+                msg.From = new MailAddress(sFrom);
+
+                if (sTo != string.Empty)
+                {
+                    for (int k = 0; k < sTo.Split(',').Length; k++)
+                    {
+                        msg.To.Add(new MailAddress(sTo.Split(',')[k]));
+                    }
+                    //msg.Subject = sSubject;
+                    //msg.IsBodyHtml = true; //***true - HTMl ***false- text
+                    //msg.Body = sBody;
+
+                }
+
+
+                //if (sToC != string.Empty)
+                //{
+                //    for (int k = 0; k < sToC.Split(',').Length; k++)
+                //    {
+                //        msg.To.Add(new MailAddress(sToC.Split(',')[k]));
+                //    }
+                //    msg.Subject = sSubject;
+                //    msg.IsBodyHtml = true; //***true - HTMl ***false- text
+                //    msg.Body = sBodyC;
+
+                //}
+
+                if (sCC != string.Empty)
+                {
+                    for (int i = 0; i < sCC.Split(',').Length; i++)
+                    {
+                        msg.CC.Add(new MailAddress(sCC.Split(',')[i]));
+                    }
+                    //msg.CC.Add(new MailAddress(sCC));
+
+                }
+                if (sBCC != string.Empty)
+                {
+                    for (int j = 0; j < sBCC.Split(',').Length; j++)
+                    {
+                        msg.Bcc.Add(new MailAddress(sBCC.Split(',')[j]));
+                    }
+                    //msg.Bcc.Add(new MailAddress(sBCC));
+                }
+
+                msg.Subject = sSubject;
+                msg.IsBodyHtml = true; //***true - HTMl ***false- text
+                msg.Body = sBody;
+                SmtpClient smtpmail = new SmtpClient(sHost, sPort);
+                smtpmail.Credentials = new System.Net.NetworkCredential(sAuthUsername, sAuthPassword);
+                smtpmail.EnableSsl = true;
+                smtpmail.Send(msg);
+
+                LogDetails.LogError("", "Send_Mail_Success", "Mail Sent Successfully, Mail Details: Subject :" + msg.Subject.ToString()+", To:"+msg.To.ToString());
+
+            }
+        }
+        catch (Exception exp)
+        {
+
+            LogDetails.LogError("", "Send_Mail_error", exp.ToString());
+        }
+    }
+
+
+
+    public static string Transform(string sRequestXML, string sXSLPath)
+    {
+        MemoryStream stream = null;
+        XmlTextWriter writer = null;
+        XPathDocument xpathDoc = null;
+        XslCompiledTransform transform = null;
+        try
+        {
+            //Load xml string to stream
+            byte[] byteArray = Encoding.ASCII.GetBytes(sRequestXML);
+            stream = new MemoryStream(byteArray);
+            StringWriter sWriter = new StringWriter();
+            writer = new XmlTextWriter(sWriter);
+
+            //Load xsl
+            xpathDoc = new XPathDocument(stream);
+            //Transform xml
+            transform = new XslCompiledTransform();
+            transform.Load(sXSLPath);
+            transform.Transform(xpathDoc, null, writer); // Transform
+            return sWriter.ToString();
+
+
+        }
+        catch (Exception exp)
+        {
+            //Logger.LogError("Utilities", "Transform", exp.ToString());
+            throw exp;
+        }
+        finally
+        {
+            if (transform != null)
+            {
+                transform = null;
+            }
+
+            if (stream != null)
+            {
+                stream.Dispose();
+                stream.Close();
+                stream = null;
+            }
+        }
+    }
+
+
+
+
+    public static void SendSMS(string recipient, string refid, string name, string Date,string Time)
+    {
+
+        //-------------------------AWS---------------------
+
+
+        //AmazonSimpleNotificationServiceClient smsClient = new AmazonSimpleNotificationServiceClient("AKIAIM74YGZN4KMFD7SA", "xXcGyJKKNYwcGIjgiQorkS8EBezWkpraKmu533lW", "sns.ap - northeast - 1.amazonaws.com");
+        //var smsAttributes = new Dictionary<string, MessageAttributeValue>();
+        //PublishRequest publishRequest = new PublishRequest();
+        //publishRequest.Message = "Thank you for fixing your appointment and we will see you soon with the address of the location.";
+        //publishRequest.MessageAttributes = smsAttributes;
+        //publishRequest.PhoneNumber = recipient;
+
+        //PublishResponse result = smsClient.Publish(publishRequest);
+
+        try
+        {
+            //------------------------------------------------
+
+            string model = HttpContext.Current.Session["Model"].ToString();
+
+            string location = HttpContext.Current.Session["Location"].ToString();
+
+            AmazonSimpleNotificationServiceClient smsClient = new AmazonSimpleNotificationServiceClient("AKIAIM74YGZN4KMFD7SA", "xXcGyJKKNYwcGIjgiQorkS8EBezWkpraKmu533lW", Amazon.RegionEndpoint.USEast1);
+
+
+            var smsAttributes = new Dictionary<string, MessageAttributeValue>();
+
+            MessageAttributeValue senderID = new MessageAttributeValue();
+            senderID.DataType = "String";
+            senderID.StringValue = "WEPAYTHEMAX";
+
+
+            MessageAttributeValue sMSType = new MessageAttributeValue();
+            sMSType.DataType = "String";
+            sMSType.StringValue = "Transactional";
+
+            MessageAttributeValue maxPrice = new MessageAttributeValue();
+            maxPrice.DataType = "Number";
+            maxPrice.StringValue = "0.5";
+
+            CancellationTokenSource source = new CancellationTokenSource();
+            CancellationToken token = source.Token;
+
+
+            var url = location;
+
+            //bdy.AppendLine(url);
+            //var url1 = bdy.ToString();
+
+            //new Code
+            location = Regex.Replace(location, @"\s+", "");
+            string urllink = "https://www.wepaythemax.com/Contact.aspx?location=" + location + "";
+
+
+
+
+            string msg1 = "Thanks for choosing AUTOBUY.";
+            //   String msg = msg1 + " Your appt is set for " + Date + " and " + Time + ". Bring your title, payoff info and valid DL to our " + location + ".";
+            String msg = msg1 + " Your appt is set for " + Date + " and " + Time + ". Bring your title, payoff info and valid DL to our " + url + " click " + urllink;
+
+
+           // string msg1 = "Thank you for fixing your appointment, we will see you soon at "+location+" location to get the Max for your vehicle.";
+            //String msg = msg1 + "You are scheduled for " + Date + ", Time " + Time + ".";
+
+            //string msg1 = "Thank you for fixing your appointment and we will see you soon with the address of the location.";
+            //String msg = msg1 + "Your appointment Date " + Date + ", Time " + Time + ".";
+
+
+
+
+
+            smsAttributes.Add("AWS.SNS.SMS.SenderID", senderID);
+            smsAttributes.Add("AWS.SNS.SMS.SMSType", sMSType);
+            smsAttributes.Add("AWS.SNS.SMS.MaxPrice", maxPrice);
+
+            PublishRequest publishRequest = new PublishRequest();
+            publishRequest.Message = msg;
+            publishRequest.MessageAttributes = smsAttributes;
+            //   publishRequest.Subject = "bala";
+
+            string Ccode = ConfigurationManager.AppSettings["countryCode"].ToString();
+         
+
+            //if (recipient.Substring(0,2) == "91")
+            //{
+            //    if (recipient.Length == 10)
+            //    {
+            //        publishRequest.PhoneNumber = Ccode + recipient;
+            //    }
+            //    else if (recipient.Length > 10) {
+
+            //        publishRequest.PhoneNumber = recipient;
+            //     }
+
+            //}
+            //else if (recipient.Substring(0, 2) != "91")
+            //{
+            //    publishRequest.PhoneNumber = Ccode + recipient;
+            //}
+
+
+            if (recipient.Length == 10)
+
+            {
+                publishRequest.PhoneNumber = Ccode + recipient;
+            }
+            else if (recipient.Length > 10)
+            {
+                publishRequest.PhoneNumber = recipient;
+            }
+
+
+
+
+
+     		//publishRequest.PhoneNumber = Ccode + recipient;
+            PublishResponse result = smsClient.Publish(publishRequest);
+            //Task<PublishResponse> result = smsClient.Publish(publishRequest,);
+            //-------------------------------
+
+            string output = "Result : Status - " + result.HttpStatusCode.ToString()+",Id - "+ result.MessageId.ToString() + ", Msg : " + msg.ToString();
+            LogDetails.LogError("", "Get_SMS_Success_Status",output);
+
+        }
+        catch (Exception ex)
+        {
+            LogDetails.LogError("", "Get_SMS_log_error", ex.ToString());
+
+        }
+    }
+
+    // email for schedule
+
+
+    public static void final_email_2(string schedule_email, string pre_loc, string mailbody)
+    {
+        try
+        {
+            string sBCC = string.Empty;
+            string sCC = string.Empty;
+
+            sBCC = ConfigurationManager.AppSettings["for_bcc"].ToString();
+            string sFromAddress = ConfigurationManager.AppSettings["CONTACTMAILFROM"].ToString();
+
+            string sToAddress = "raju@rcktechiees.com";
+            if (HttpContext.Current.Session["pre_loc"] != null)
+            {
+                if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "MIAMI")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_miami"].ToString();
+
+                }
+
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "WEST PALM BEACH")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_wbm"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "STUART")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_stu"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "FORT LAUDERDALE")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_Margate"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "MELBOURNE")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_Melbourne"].ToString();
+
+                }
+                else if (HttpContext.Current.Session["pre_loc"].ToString().ToUpper() == "ORLANDO")
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO_orlando"].ToString();
+
+                }
+
+
+
+                else
+                {
+                    sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO"].ToString();
+                }
+
+                HttpContext.Current.Session["pre_loc"] = null;
+            }
+
+            // string sToAddress = ConfigurationManager.AppSettings["CONTACTMAILTO"].ToString();
+
+            string sXSLPath = System.Web.HttpContext.Current.Server.MapPath(ConfigurationManager.AppSettings["xlxt_schedule"].ToString());
+
+
+
+            // string sXSLPath = Server.MapPath(ConfigurationManager.AppSettings["ACTIVATEXSLT"].ToString());
+            //if (Session["mail_temp_type"] != null)
+            //{
+
+            //    if (Session["mail_temp_type"] == "sec")
+            //    {
+            //        sXSLPath = Server.MapPath(ConfigurationManager.AppSettings["xlxt_schedule"].ToString());
+            //    }
+
+            //}
+
+            string sXSLPathCustomer = null;
+            string sBody = Transform(mailbody, sXSLPath);
+
+            sCC = ConfigurationManager.AppSettings["CONTACTMAILTOCC"].ToString();
+            //  SendMail(sFromAddress, sToAddress, sCC, HttpContext.Current.Session["customermailid"].ToString().Split('~')[1], sBody);
+
+            string mdate = HttpContext.Current.Session["Mdate"].ToString();
+
+            if (mdate != "")
+            {
+                sXSLPathCustomer = System.Web.HttpContext.Current.Server.MapPath(ConfigurationManager.AppSettings["Customer_mail_schedule_v2"].ToString());
+
+            }
+            string customerbody = Transform(schedule_email, sXSLPathCustomer);
+
+
+            if (HttpContext.Current.Session["customermailid"].ToString().Split('~')[0] != "")
+            {
+                SendMail(sFromAddress, HttpContext.Current.Session["customermailid"].ToString().Split('~')[0], sBCC, HttpContext.Current.Session["customermailid"].ToString().Split('~')[1], customerbody);
+            }
+        }
+        catch(Exception ex)
+        {
+            LogDetails.LogError("", "Email_2_Content_Error", ex.ToString());
+        }
+
+    }
+
+
+
+    //----sent data to  elastic search
+
+
+    public static void callMethod(string leadid, string status, string loc, string source, DateTime Time, string schtime, string schform)
+    {
+        try
+        {
+            var node = new Uri("http://es.jetinfo.us/");
+            var settings = new ConnectionSettings(node);
+            var client = new ElasticClient(settings);
+            //   Debug.Write("current status " + status);
+            if (status == "Schedule")
+            {
+                status = "2";
+            }
+            if (status == "Looks")
+            {
+                status = "4";
+            }
+            if (loc == "SANFORD")
+            {
+                loc = "SAF";
+            }
+            else if (loc == "DAYTONA")
+            {
+                loc = "DAY";
+            }
+            else if (loc == "ORLANDO")
+            {
+                loc = "ORL";
+            }
+            else if (loc == "MELBOURNE")
+            {
+                loc = "MB";
+            }
+            else if (loc == "MIAMI")
+            {
+                loc = "MIA";
+            }
+            if (loc == "FORT LAUDERDALE")
+            {
+                loc = "FT";
+            }
+            else if (loc == "STUART")
+            {
+                loc = "STU";
+            }
+            else if (loc == "WEST PALM BEACH")
+            {
+                loc = "WPB";
+            }
+            else if (loc == "CUTLER BAY")
+            {
+                loc = "CB";
+            }
+            else if (loc == "TAMPA")
+            {
+                loc = "TAM";
+            }
+            else if (loc == "CARLE PLACE")
+            {
+                loc = "CP";
+            }
+            else if (loc == "SMITHTOWN")
+            {
+                loc = "ST";
+            }
+            else if (loc == "OTHER")
+            {
+                loc = "OT";
+            }
+
+            string c_time = Time.ToString("yyyy-MM-dd HH:mm:ss");
+            DateTime c_times1 = DateTime.ParseExact(c_time, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+          
+            DateTime schtime1 = DateTime.ParseExact(schtime, "yyyy-MM-dd HH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+
+
+
+
+
+            HttpContext.Current.Session["ES-T"] = c_times1;
+            HttpContext.Current.Session["ES-L"] = loc;
+            HttpContext.Current.Session["ES-S"] = source;
+            //old
+            var es = new ldapi
+            {
+                Id = Convert.ToInt32(leadid),
+                ld = leadid,
+                st = status,
+                lc = loc,
+                sr = source,
+                fr = "web",
+                nt = "",
+                cd = c_times1,
+                md = c_times1,
+                cdd = Time.ToString("MM-dd-yyyy"),
+                mdd = "",
+                bt = "n",
+
+                sno = Convert.ToInt32("0"),
+                //at = Time.ToString("HH:mm:ss")
+                sf = schform,
+                ad = schtime1
+
+            };
+
+
+            //new
+            var es1 = new ldapi1
+            {
+                Id = Convert.ToInt32(leadid),
+                ld = leadid,
+                st = status,
+                lc = loc,
+                sr = source,
+                fr = "web",
+                nt = "",
+                cd = c_times1,
+                md = c_times1,
+                cdd = Time.ToString("MM-dd-yyyy"),
+                mdd = "",
+                bt = "n",
+
+                sno = Convert.ToInt32("0"),
+                //at = Time.ToString("HH:mm:ss")
+                sf = schform,
+                ad = schtime1
+
+            };
+
+
+            //var response_wpy = client.Index(es1, idx => idx.Index("wpy"));
+
+            //var response_wpy_ld = client.Index(es, idx => idx.Index("wpy_ld"));
+
+
+             var response_auto_schedule = client.Index(es, idx => idx.Index("devautobuy"));
+           // var response_auto_schedule = client.Index(es1, idx => idx.Index("auto_schedule"));
+
+            //var response_devautobuy_ld = client.Index(es1, idx => idx.Index("devautobuy_ld"));
+
+        }
+        catch (Exception e)
+        {
+            LogDetails.LogError("", "ElesticSearch send data Error", e.Message.ToString());
+        }
+    }
+
+
+     
+
+
+    //------------------end of elasstic search
+
+
+
+    //-----------------------------------------------------------------------------------------------------------------------------------------------s
+
+
+
+
+}
